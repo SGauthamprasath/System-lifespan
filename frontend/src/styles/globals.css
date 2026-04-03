@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-kronos-bg text-gray-200 antialiased overflow-hidden font-sans m-0 p-0;
+    background-image: radial-gradient(circle at 2px 2px, rgba(0, 255, 209, 0.05) 1px, transparent 0);
+    background-size: 32px 32px;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-kronos-primary rounded;
+}
+
+/* HUD Overlay */
+.hud-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(26, 26, 46, 0.4) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.scanline {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 10px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 209, 0),
+    rgba(0, 255, 209, 0.3) 50%,
+    rgba(0, 255, 209, 0)
+  );
+  opacity: 0.15;
+  z-index: 2;
+  animation: scan 6s linear infinite;
+}
