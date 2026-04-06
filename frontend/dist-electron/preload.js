@@ -1,8 +1,8 @@
-import { contextBridge, ipcRenderer } from "electron";
+let electron = require("electron");
 //#region src/main/preload.ts
-contextBridge.exposeInMainWorld("electron", { windowControls: {
-	minimize: () => ipcRenderer.send("window-minimize"),
-	maximize: () => ipcRenderer.send("window-maximize"),
-	close: () => ipcRenderer.send("window-close")
+electron.contextBridge.exposeInMainWorld("electron", { windowControls: {
+	minimize: () => electron.ipcRenderer.send("window-minimize"),
+	maximize: () => electron.ipcRenderer.send("window-maximize"),
+	close: () => electron.ipcRenderer.send("window-close")
 } });
 //#endregion
