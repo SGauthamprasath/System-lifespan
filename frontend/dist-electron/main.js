@@ -29,29 +29,33 @@ let nedb_promises = require("nedb-promises");
 nedb_promises = __toESM(nedb_promises);
 let node_path = require("node:path");
 node_path = __toESM(node_path);
-//#region src/services/metrics.ts
-async function collectMetrics() {
-	const [cpu, mem, temp, disk, network, battery, processes] = await Promise.all([
+async function collectFastMetrics() {
+	const [cpu, mem, network] = await Promise.all([
 		systeminformation.default.currentLoad(),
 		systeminformation.default.mem(),
-		systeminformation.default.cpuTemperature(),
-		systeminformation.default.fsSize(),
-		systeminformation.default.networkStats(),
-		systeminformation.default.battery(),
-		systeminformation.default.processes()
+		systeminformation.default.networkStats()
 	]);
-	const topCPUProcess = processes.list.sort((a, b) => b.cpu - a.cpu)[0]?.name || "unknown";
 	return {
 		timestamp: Date.now(),
 		cpuLoad: parseFloat(cpu.currentLoad.toFixed(2)),
 		ramPercent: parseFloat((mem.used / mem.total * 100).toFixed(2)),
-		cpuTemp: temp.main ?? 0,
-		diskUsedPercent: parseFloat(disk[0]?.use?.toFixed(2) ?? "0"),
 		netUpload: parseFloat(((network[0]?.tx_sec ?? 0) / 1024 / 1024).toFixed(2)),
-		netDownload: parseFloat(((network[0]?.rx_sec ?? 0) / 1024 / 1024).toFixed(2)),
-		topCPUProcess,
-		batteryPercent: battery.percent ?? 100
+		netDownload: parseFloat(((network[0]?.rx_sec ?? 0) / 1024 / 1024).toFixed(2))
 	};
+}
+async function collectSlowMetrics() {
+	const [temp, disk, battery, processes] = await Promise.all([
+		systeminformation.default.cpuTemperature(),
+		systeminformation.default.fsSize(),
+		systeminformation.default.battery(),
+		systeminformation.default.processes()
+	]);
+	const io = await systeminformation.default.disksIO().catch(() => null);
+	temp.main, parseFloat(disk[0]?.use?.toFixed(2) ?? "0"), parseFloat(((io?.rIO_sec ?? 0) / 1024 / 1024).toFixed(2)), parseFloat(((io?.wIO_sec ?? 0) / 1024 / 1024).toFixed(2)), processes.list.filter((p) => p != null && p.pid != null && p.name != null).sort((a, b) => (b.cpu ?? 0) - (a.cpu ?? 0)).slice(0, 5).map((p) => ({
+		name: p.name ?? "unknown",
+		cpu: parseFloat((p.cpu ?? 0).toFixed(1)),
+		pid: p.pid
+	})), battery.percent;
 }
 //#endregion
 //#region src/main/db.ts
@@ -72,7 +76,6 @@ console.log("✅ DB initialized at", userDataPath);
 //#endregion
 //#region src/main/main.ts
 var win = null;
-var secondsCount = 0;
 function createWindow() {
 	win = new electron.BrowserWindow({
 		width: 1200,
@@ -99,20 +102,28 @@ electron.ipcMain.on("window-close", (event) => {
 	electron.BrowserWindow.fromWebContents(event.sender)?.close();
 });
 function startCollection() {
+	let dbTickCount = 0;
 	setInterval(async () => {
 		try {
-			const snapshot = await collectMetrics();
-			console.log("📊 Snapshot:", snapshot);
-			win?.webContents.send("metrics-update", snapshot);
-			secondsCount++;
-			if (secondsCount % 12 === 0) {
-				await snapshotsDB.insert(snapshot);
+			const fast = await collectFastMetrics();
+			win?.webContents.send("metrics-update", { ...fast });
+		} catch (err) {
+			console.error("Fast tick error:", err);
+		}
+	}, 1e3);
+	setInterval(async () => {
+		try {
+			const full = await collectSlowMetrics();
+			win?.webContents.send("metrics-update", full);
+			dbTickCount++;
+			if (dbTickCount % 6 === 0) {
+				await snapshotsDB.insert(full);
 				console.log("💾 Saved to DB");
 			}
 		} catch (err) {
-			console.error("❌ Error:", err);
+			console.error("Slow tick error:", err);
 		}
-	}, 5e3);
+	}, 1e4);
 }
 electron.ipcMain.handle("get-recent-snapshots", async () => {
 	const oneHourAgo = Date.now() - 3600 * 1e3;

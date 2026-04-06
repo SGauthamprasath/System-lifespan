@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { collectMetrics } from '../services/metrics'
+import { collectFastMetrics, collectSlowMetrics } from '../services/metrics'
 import { snapshotsDB, warningsDB } from './db'
 
 let win: BrowserWindow | null = null
@@ -44,24 +44,36 @@ ipcMain.on('window-close', (event) => {
 // ── Metrics Collection ───────────────────────────────────────────────────────
 
 function startCollection() {
+  let dbTickCount = 0
+
+  // Fast tier — every 1s (cpu, ram, network only)
   setInterval(async () => {
     try {
-      const snapshot = await collectMetrics()
-      console.log('📊 Snapshot:', snapshot)
+      const fast = await collectFastMetrics()
+      win?.webContents.send('metrics-update', {
+        ...fast,
+        // slow fields will be sent on slow ticks — renderer keeps last value
+      })
+    } catch (err) {
+      console.error('Fast tick error:', err)
+    }
+  }, 1000)
 
-      // Always push live to frontend
-      win?.webContents.send('metrics-update', snapshot)
+  // Slow tier — every 10s (disk, temp, processes, battery)
+  setInterval(async () => {
+    try {         // updates the cache inside metrics.ts
+      const full = await collectSlowMetrics()    // fast + cached slow merged
+      win?.webContents.send('metrics-update', full)
 
-      // Save to DB every 1 minute (every 12th tick)
-      secondsCount++
-      if (secondsCount % 12 === 0) {
-        await snapshotsDB.insert(snapshot)
+      dbTickCount++
+      if (dbTickCount % 6 === 0) {         // save to DB every 60s (6 × 10s)
+        await snapshotsDB.insert(full)
         console.log('💾 Saved to DB')
       }
     } catch (err) {
-      console.error('❌ Error:', err)
+      console.error('Slow tick error:', err)
     }
-  }, 5000)
+  }, 10000)
 }
 
 // ── IPC Handlers ─────────────────────────────────────────────────────────────
