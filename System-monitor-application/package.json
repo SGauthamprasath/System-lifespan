@@ -1,13 +1,36 @@
 {
-  "name": "frontend",
+  "name": "system-monitor-application",
+  "version": "1.0.0",
+  "description": "A system health monitor application with ML-powered early warning system",
+  "author": "Your Team Name",
   "private": true,
-  "version": "0.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:electron": "set CSC_IDENTITY_AUTO_DISCOVERY=false && npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.yourteam.systemmonitor",
+    "productName": "System Health Monitor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "clsx": "^2.1.1",

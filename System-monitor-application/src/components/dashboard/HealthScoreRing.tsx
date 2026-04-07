@@ -1,4 +1,3 @@
-import React from 'react';
 import { useMetricsStore } from '../../store/metricsStore';
 
 export function HealthScoreRing() {

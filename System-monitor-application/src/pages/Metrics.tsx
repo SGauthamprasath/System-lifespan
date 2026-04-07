@@ -1,4 +1,3 @@
-import React from 'react';
 import { LiveGraph } from '../components/metrics/LiveGraph';
 import { ProcessTable } from '../components/metrics/ProcessTable';
 import { useMetrics } from '../context/MetricsContext';

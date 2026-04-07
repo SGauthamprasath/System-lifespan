@@ -1,4 +1,3 @@
-import React from 'react';
 import { HealthScoreRing } from '../components/dashboard/HealthScoreRing';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { GlassCard } from '../components/common/GlassCard';
@@ -14,7 +13,7 @@ export function Dashboard() {
   const disk    = current?.diskUsedPercent ?? 0
   const netUp   = current?.netUpload       ?? 0
   const netDown = current?.netDownload     ?? 0
-  const topProc = current?.topCPUProcess   ?? '—'
+  const topProc = current?.topProcesses?.[0]?.name ?? '—'
   const temp    = current?.cpuTemp         ?? 0
 
   return (

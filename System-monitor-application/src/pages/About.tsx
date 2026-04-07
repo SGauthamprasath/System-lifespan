@@ -1,4 +1,3 @@
-import React from 'react';
 import { Code, AlertCircle } from 'lucide-react';
 
 export function About() {
