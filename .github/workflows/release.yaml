@@ -1,42 +1,49 @@
 name: Release Pipeline
 
-# WHEN should this run?
 on:
   push:
-    branches: [main]    # ONLY when code reaches main branch
+    branches: [main]
 
 jobs:
   release-windows:
-    runs-on: windows-latest   # use a Windows machine (needed to build .exe)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: System-monitor-application
 
     steps:
-      # Step 1 - Download your code
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      # Step 2 - Install Node.js
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      # Step 3 - Install packages
       - name: Install dependencies
         run: npm install
 
-      # Step 4 - Build the actual .exe installer
+      # Create the Git tag BEFORE uploading the release
+      - name: Create Git tag
+        run: |
+          git tag v${{ github.run_number }}
+          git push origin v${{ github.run_number }}
+        working-directory: ${{ github.workspace }}   # repo root, not subfolder
+
       - name: Build Electron app
         run: npm run build:electron
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false  # skip code signing
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub's automatic token
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 5 - Upload .exe to GitHub Releases
+      # Upload the built artifacts to the release
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1  # someone built this action, we just use it
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.run_number }}  # auto version number
+          tag_name: v${{ github.run_number }}
           name: "System Health Monitor v${{ github.run_number }}"
           files: |
-            release/*.exe        # upload the installer
-            release/*.blockmap   # upload the blockmap
+            System-monitor-application/release/*.exe
+            System-monitor-application/release/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
