@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { GlassCard } from '../common/GlassCard';
 

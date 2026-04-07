@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { GlassCard } from '../common/GlassCard';
 import { List, Search } from 'lucide-react';
 

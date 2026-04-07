@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity, LayoutDashboard, ShieldAlert, Settings, Info } from 'lucide-react';
 
 interface SidebarProps {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FilterTabs } from '../components/alerts/FilterTabs';
 import { AlertCard } from '../components/alerts/AlertCard';
 import { ShieldCheck } from 'lucide-react';

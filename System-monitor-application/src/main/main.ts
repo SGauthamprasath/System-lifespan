@@ -4,7 +4,6 @@ import { collectFastMetrics, collectSlowMetrics } from '../services/metrics'
 import { snapshotsDB, warningsDB } from './db'
 
 let win: BrowserWindow | null = null
-let secondsCount = 0
 
 function createWindow() {
   win = new BrowserWindow({
@@ -34,7 +33,9 @@ ipcMain.on('window-minimize', (event) => {
 
 ipcMain.on('window-maximize', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender)
-  window?.isMaximized() ? window.unmaximize() : window.maximize()
+  if (window) {
+    window.isMaximized() ? window.unmaximize() : window.maximize()
+  }
 })
 
 ipcMain.on('window-close', (event) => {
@@ -67,7 +68,7 @@ function startCollection() {
 
       dbTickCount++
       if (dbTickCount % 6 === 0) {         // save to DB every 60s (6 × 10s)
-        await snapshotsDB.insert(full)
+        await snapshotsDB.insert(JSON.parse(JSON.stringify(full)))
         console.log('💾 Saved to DB')
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ThresholdSlider } from '../components/settings/ThresholdSlider';
 import { ToggleSwitch } from '../components/settings/ToggleSwitch';
 import { GlassCard } from '../components/common/GlassCard';
