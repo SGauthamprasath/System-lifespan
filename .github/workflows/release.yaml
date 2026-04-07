@@ -1,0 +1,42 @@
+name: Release Pipeline
+
+# WHEN should this run?
+on:
+  push:
+    branches: [main]    # ONLY when code reaches main branch
+
+jobs:
+  release-windows:
+    runs-on: windows-latest   # use a Windows machine (needed to build .exe)
+
+    steps:
+      # Step 1 - Download your code
+      - uses: actions/checkout@v3
+
+      # Step 2 - Install Node.js
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3 - Install packages
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4 - Build the actual .exe installer
+      - name: Build Electron app
+        run: npm run build:electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false  # skip code signing
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub's automatic token
+
+      # Step 5 - Upload .exe to GitHub Releases
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1  # someone built this action, we just use it
+        with:
+          tag_name: v${{ github.run_number }}  # auto version number
+          name: "System Health Monitor v${{ github.run_number }}"
+          files: |
+            release/*.exe        # upload the installer
+            release/*.blockmap   # upload the blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

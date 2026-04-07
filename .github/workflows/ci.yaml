@@ -1,0 +1,37 @@
+# Name of the workflow (shows in GitHub Actions tab)
+name: CI Pipeline
+
+# WHEN should this run?
+on:
+  push:
+    branches: [develop, 'feature/**']  # run when pushed to develop or any feature branch
+  pull_request:
+    branches: [develop, main]          # run when PR is opened to develop or main
+
+# WHAT should it do?
+jobs:
+  build:                        # job name
+    runs-on: ubuntu-latest      # use a Ubuntu machine (GitHub provides this free)
+
+    steps:
+      # Step 1 - Download your code onto that machine
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 - Install Node.js on that machine
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3 - Install your npm packages
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4 - Run your linter
+      - name: Run lint
+        run: npm run lint
+
+      # Step 5 - Build the app
+      - name: Build app
+        run: npm run build
