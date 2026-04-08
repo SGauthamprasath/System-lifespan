@@ -18,17 +18,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
 
-      # Create the Git tag BEFORE uploading the release
       - name: Create Git tag
         run: |
           git tag v${{ github.run_number }}
           git push origin v${{ github.run_number }}
-        working-directory: ${{ github.workspace }}   # repo root, not subfolder
+        working-directory: ${{ github.workspace }}
 
       - name: Build Electron app
         run: npm run build:electron
@@ -36,7 +35,6 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Upload the built artifacts to the release
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
