@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   release-windows:
     runs-on: windows-latest
@@ -22,12 +25,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Create Git tag
-        run: |
-          git tag v${{ github.run_number }}
-          git push origin v${{ github.run_number }}
-        working-directory: ${{ github.workspace }}
 
       - name: Build Electron app
         run: npm run build:electron
