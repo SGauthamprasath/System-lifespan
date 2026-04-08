@@ -10,13 +10,22 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:electron": "set CSC_IDENTITY_AUTO_DISCOVERY=false && npm run build && electron-builder"
+    "build:electron": "electron-builder --publish always"
   },
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/SGauthamprasath/System-lifespan.git"
+},
   "build": {
     "appId": "com.yourteam.systemmonitor",
     "productName": "System Health Monitor",
     "directories": {
       "output": "release"
+    },
+    "publish": {
+    "provider": "github",
+    "owner": "SGauthamprasath",
+    "repo": "System-lifespan"
     },
     "files": [
       "dist/**/*",
