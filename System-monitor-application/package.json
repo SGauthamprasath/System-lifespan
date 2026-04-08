@@ -22,17 +22,15 @@
     "directories": {
       "output": "release"
     },
-    "publish": {
-    "provider": "github",
-    "owner": "SGauthamprasath",
-    "repo": "System-lifespan",
-    "draft": false,
-    "prerelease": false
-    },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
     ],
+    "publish": {
+    "provider": "github",
+    "owner": "SGauthamprasath",
+    "repo": "System-lifespan"
+    },
     "win": {
       "target": "nsis"
     },
