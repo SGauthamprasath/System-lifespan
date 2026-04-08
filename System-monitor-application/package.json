@@ -25,7 +25,9 @@
     "publish": {
     "provider": "github",
     "owner": "SGauthamprasath",
-    "repo": "System-lifespan"
+    "repo": "System-lifespan",
+    "draft": false,
+    "prerelease": false
     },
     "files": [
       "dist/**/*",
