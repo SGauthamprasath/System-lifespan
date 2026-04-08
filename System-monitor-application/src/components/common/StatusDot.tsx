@@ -1,4 +1,4 @@
-import { cn } from './GlassCard';
+import { cn } from '../../utils/cn';
 
 interface StatusDotProps {
   status: 'healthy' | 'warning' | 'critical' | 'inactive';

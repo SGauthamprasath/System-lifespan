@@ -1,16 +1,7 @@
-import React, { createContext, useContext, useEffect, useReducer } from 'react'
+import React, { useEffect, useReducer } from 'react'
 import type { MetricSnapshot } from '../services/metrics'
-
-// ── State ─────────────────────────────────────────────────────────────────────
-interface MetricsState {
-  current: MetricSnapshot | null  // latest live snapshot
-  history: MetricSnapshot[]       // rolling 60-entry window (~5 min at 5s intervals)
-}
-
-const initialState: MetricsState = {
-  current: null,
-  history: [],
-}
+import { MetricsContext } from './MetricsContextValue'
+import type { MetricsState } from './MetricsContextValue'
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 type Action =
@@ -18,6 +9,11 @@ type Action =
   | { type: 'LOAD';     payload: MetricSnapshot[] } // boot fetch from NeDB
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
+const initialState: MetricsState = {
+  current: null,
+  history: [],
+}
+
 function metricsReducer(state: MetricsState, action: Action): MetricsState {
   switch (action.type) {
     case 'SNAPSHOT':
@@ -37,21 +33,17 @@ function metricsReducer(state: MetricsState, action: Action): MetricsState {
   }
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
-const MetricsContext = createContext<MetricsState | undefined>(undefined)
-
 // ── Provider ──────────────────────────────────────────────────────────────────
+// This file exports ONLY this component — required by react-refresh/only-export-components.
+// The context object lives in MetricsContextValue.ts; the hook lives in useMetrics.ts.
 export function MetricsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(metricsReducer, initialState)
 
   useEffect(() => {
-    // Boot: pre-populate history from NeDB (last 1 hour of saved snapshots)
     window.electron.getRecentSnapshots().then((snapshots) => {
       dispatch({ type: 'LOAD', payload: snapshots })
     })
 
-    // Live: subscribe to 5-second pushes from main.ts
-    // onMetricsUpdate returns an unsubscribe fn — React calls it on unmount
     const unsubscribe = window.electron.onMetricsUpdate((snapshot) => {
       dispatch({ type: 'SNAPSHOT', payload: snapshot })
     })
@@ -64,13 +56,4 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
       {children}
     </MetricsContext.Provider>
   )
-}
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
-export function useMetrics() {
-  const ctx = useContext(MetricsContext)
-  if (ctx === undefined) {
-    throw new Error('useMetrics must be used inside <MetricsProvider>')
-  }
-  return ctx
 }
