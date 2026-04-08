@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:electron": "electron-builder --publish always"
+    "build:electron": "electron-builder --publish never"
   },
   "repository": {
   "type": "git",
@@ -25,7 +25,9 @@
     "publish": {
     "provider": "github",
     "owner": "SGauthamprasath",
-    "repo": "System-lifespan"
+    "repo": "System-lifespan",
+    "draft": false,
+    "prerelease": false
     },
     "files": [
       "dist/**/*",
