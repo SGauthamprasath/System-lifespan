@@ -1,5 +1,11 @@
+// Topbar.tsx - no declare global needed, electron.d.ts already covers it
+
 import { useEffect, useState } from 'react';
 import { Minus, Square, X } from 'lucide-react';
+
+// WebkitAppRegion is an Electron-specific CSS property React doesn't know about.
+// We define a small helper type just for these two style objects.
+type ElectronStyle = React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' };
 
 export function Topbar() {
   const [time, setTime] = useState(new Date());
@@ -19,15 +25,18 @@ export function Topbar() {
   }, []);
 
   const handleWindowControl = (action: 'minimize' | 'maximize' | 'close') => {
-    if ((window as any).electron) {
-      (window as any).electron.windowControls[action]();
+    if (window.electron) {
+      window.electron.windowControls[action]();
     }
   };
 
+  const dragStyle:   ElectronStyle = { WebkitAppRegion: 'drag' };
+  const noDragStyle: ElectronStyle = { WebkitAppRegion: 'no-drag' };
+
   return (
-    <header 
+    <header
       className="absolute top-0 left-0 right-0 h-14 bg-kronos-card/50 backdrop-blur-md border-b border-b-kronos-primary/20 flex items-center justify-between px-6 z-20"
-      style={{ WebkitAppRegion: 'drag' } as any}
+      style={dragStyle}
     >
       {/* Brand */}
       <div className="flex items-center gap-4">
@@ -41,35 +50,32 @@ export function Topbar() {
 
       {/* Center/Right Items */}
       <div className="flex items-center gap-8 font-mono text-sm">
-        {/* Uptime */}
         <div className="flex flex-col text-right">
           <span className="text-gray-500 text-[10px] uppercase">Sys Uptime</span>
           <span className="text-kronos-secondaryLight">{uptimeStr}</span>
         </div>
-        
-        {/* Live Clock */}
+
         <div className="text-kronos-primary text-xl drop-shadow-[0_0_5px_rgba(0,255,209,0.4)]">
           {time.toLocaleTimeString([], { hour12: false })}
         </div>
 
-        {/* Window Controls */}
-        <div 
+        <div
           className="flex items-center gap-4 ml-4 text-gray-500"
-          style={{ WebkitAppRegion: 'no-drag' } as any}
+          style={noDragStyle}
         >
-          <button 
+          <button
             onClick={() => handleWindowControl('minimize')}
             className="hover:text-kronos-primary transition-colors hover:shadow-[0_0_5px_rgba(0,255,209,0.5)]"
           >
             <Minus size={16} />
           </button>
-          <button 
+          <button
             onClick={() => handleWindowControl('maximize')}
             className="hover:text-kronos-primary transition-colors hover:shadow-[0_0_5px_rgba(0,255,209,0.5)]"
           >
             <Square size={14} />
           </button>
-          <button 
+          <button
             onClick={() => handleWindowControl('close')}
             className="hover:text-kronos-critical transition-colors hover:shadow-[0_0_5px_rgba(255,69,96,0.5)]"
           >

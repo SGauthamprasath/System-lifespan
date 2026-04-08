@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { GlassCard } from '../common/GlassCard';
 
@@ -11,8 +11,12 @@ interface LiveGraphProps {
   color2?: string;
 }
 
-const makeEmptyBuffer = () =>
-  Array.from({ length: 30 }, () => ({ val: 0, val2: 0 }))
+type DataPoint = { val: number; val2: number }
+
+const BUFFER_SIZE = 30
+
+const makeEmptyBuffer = (): DataPoint[] =>
+  Array.from({ length: BUFFER_SIZE }, () => ({ val: 0, val2: 0 }))
 
 export function LiveGraph({
   title,
@@ -22,13 +26,24 @@ export function LiveGraph({
   color = '#00FFD1',
   color2 = '#7B61FF',
 }: LiveGraphProps) {
-  const [data, setData] = useState<{ val: number; val2: number }[]>(makeEmptyBuffer)
+  const [data, setData] = useState<DataPoint[]>(makeEmptyBuffer)
 
-  useEffect(() => {
-    setData((prev) =>
-      [...prev.slice(1), { val: dataValue, val2: dataValue2 ?? 0 }]
-    )
-  }, [dataValue, dataValue2])
+  // Store the last-seen prop values in state so we can detect changes during render.
+  // This is the pattern React recommends for deriving state from props without effects:
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevVal,  setPrevVal]  = useState(dataValue)
+  const [prevVal2, setPrevVal2] = useState(dataValue2)
+
+  if (dataValue !== prevVal || dataValue2 !== prevVal2) {
+    setPrevVal(dataValue)
+    setPrevVal2(dataValue2)
+    // setData called during render (not inside an effect) is batched by React
+    // into the current render pass — no extra render, no cascade.
+    setData((prev) => [
+      ...prev.slice(1),
+      { val: dataValue, val2: dataValue2 ?? 0 },
+    ])
+  }
 
   const yDomain: [number, (v: number) => number] = [
     0,
@@ -40,8 +55,6 @@ export function LiveGraph({
   const gradId2 = `grad2-${title.replace(/[^a-z0-9]/gi, '-')}`
 
   return (
-    // Fixed height on the card itself — do NOT use h-56 (Tailwind class) here
-    // because we need the chart div below to have a calculable px height too.
     <GlassCard
       className="p-5 flex flex-col hover:-translate-y-1 relative overflow-hidden"
       style={{ height: '14rem' }}

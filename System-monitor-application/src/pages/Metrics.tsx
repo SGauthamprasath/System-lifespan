@@ -1,6 +1,6 @@
 import { LiveGraph } from '../components/metrics/LiveGraph';
 import { ProcessTable } from '../components/metrics/ProcessTable';
-import { useMetrics } from '../context/MetricsContext';
+import { useMetrics } from '../context/Usemetrics';
 
 export function Metrics() {
   const { current, history } = useMetrics();

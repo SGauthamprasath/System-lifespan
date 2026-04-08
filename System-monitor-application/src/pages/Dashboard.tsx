@@ -1,7 +1,7 @@
 import { HealthScoreRing } from '../components/dashboard/HealthScoreRing';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { GlassCard } from '../components/common/GlassCard';
-import { useMetrics } from '../context/MetricsContext';
+import { useMetrics } from '../context/Usemetrics';
 
 export function Dashboard() {
   const { current } = useMetrics();

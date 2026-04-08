@@ -1,4 +1,4 @@
-import { cn } from '../common/GlassCard';
+import { cn } from '../../utils/cn';
 
 interface ToggleSwitchProps {
   label: string;

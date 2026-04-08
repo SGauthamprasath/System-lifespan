@@ -34,7 +34,7 @@ ipcMain.on('window-minimize', (event) => {
 ipcMain.on('window-maximize', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender)
   if (window) {
-    window.isMaximized() ? window.unmaximize() : window.maximize()
+    if (window.isMaximized()) { window.unmaximize() } else { window.maximize() }
   }
 })
 
@@ -51,7 +51,7 @@ function startCollection() {
   setInterval(async () => {
     try {
       const fast = await collectFastMetrics()
-      win?.webContents.send('metrics-update', {
+      void win?.webContents.send('metrics-update', {
         ...fast,
         // slow fields will be sent on slow ticks — renderer keeps last value
       })
@@ -64,7 +64,7 @@ function startCollection() {
   setInterval(async () => {
     try {         // updates the cache inside metrics.ts
       const full = await collectSlowMetrics()    // fast + cached slow merged
-      win?.webContents.send('metrics-update', full)
+      void win?.webContents.send('metrics-update', full)
 
       dbTickCount++
       if (dbTickCount % 6 === 0) {         // save to DB every 60s (6 × 10s)

@@ -1,10 +1,5 @@
 import React from 'react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../utils/cn';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -30,7 +25,6 @@ export function GlassCard({ children, className, glowColor = 'teal', hasBrackets
       )}
       {...props}
     >
-      {/* HUD Brackets */}
       {hasBrackets && (
         <>
           <div className="absolute top-0 left-0 w-2 h-2 border-t font-mono border-l border-kronos-primary/50" />
