@@ -10,32 +10,55 @@ permissions:
 jobs:
   release-windows:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: System-monitor-application
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ── Python / FastAPI ──────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        working-directory: fastapi
+        run: pip install pyinstaller fastapi uvicorn joblib scikit-learn pandas pydantic numpy
+
+      - name: Build FastAPI with PyInstaller
+        working-directory: fastapi
+        run: pyinstaller --onefile --add-data "models;models" main_api.py --name ml-service
+
+      # ── Copy ml-service.exe into Electron ─────────
+      - name: Copy ML service to Electron resources
+        run: |
+          mkdir -p System-monitor-application/resources
+          cp fastapi/dist/ml-service.exe System-monitor-application/resources/ml-service.exe
+        shell: bash
+
+      # ── Node / Electron ───────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install Node dependencies
+        working-directory: System-monitor-application
         run: npm install
 
       - name: Build app
+        working-directory: System-monitor-application
         run: npm run build
 
       - name: Build and Publish Electron
+        working-directory: System-monitor-application
         run: npm run build:electron
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List release files
+        working-directory: System-monitor-application
         run: dir release
         shell: cmd
 

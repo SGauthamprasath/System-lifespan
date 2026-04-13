@@ -1,0 +1,6 @@
+system-health-monitor/
+fastapi/__pycache__/
+fastapi/ml-service.spec
+fastapi/dist/
+fastapi/build/
+System-monitor-application/resources/

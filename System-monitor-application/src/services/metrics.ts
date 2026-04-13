@@ -43,7 +43,7 @@ export async function collectFastMetrics(): Promise<Pick<MetricSnapshot,
   }
 }
 
-export async function collectSlowMetrics(): Promise<void> {
+export async function collectSlowMetrics(): Promise<MetricSnapshot> {
   const [temp, disk, battery, processes] = await Promise.all([
     si.cpuTemperature(),
     si.fsSize(),
@@ -51,7 +51,7 @@ export async function collectSlowMetrics(): Promise<void> {
     si.processes(),
   ])
 
-  const io = await si.disksIO().catch(() => null)   // separate call — not always available
+  const io = await si.disksIO().catch(() => null)
 
   slowCache = {
     cpuTemp:         temp.main ?? 0,
@@ -67,8 +67,12 @@ export async function collectSlowMetrics(): Promise<void> {
         cpu:   parseFloat((p.cpu ?? 0).toFixed(1)),
         pid:   p.pid,
       })),
-    batteryPercent:  battery.percent ?? 100,
+    batteryPercent: battery.percent ?? 100,
   }
+
+  // Return full snapshot
+  const fast = await collectFastMetrics()
+  return { ...fast, ...slowCache }
 }
 
 // Merges fast + cached slow into a full snapshot

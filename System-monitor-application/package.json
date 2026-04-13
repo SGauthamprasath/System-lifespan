@@ -22,6 +22,12 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "resources/ml-service.exe",
+        "to": "ml-service.exe"
+      }
+    ],
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
