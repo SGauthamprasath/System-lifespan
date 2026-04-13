@@ -1,9 +1,50 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
+import { spawn, ChildProcess } from 'child_process'
 import { collectFastMetrics, collectSlowMetrics } from '../services/metrics'
 import { snapshotsDB, warningsDB } from './db'
 
 let win: BrowserWindow | null = null
+let mlService: ChildProcess | null = null
+
+// ── ML Service ───────────────────────────────────────────────────────────────
+
+function startMLService() {
+  // In development → looks for ml-service.exe in resources folder
+  // In production  → looks inside packaged app resources
+  const mlServicePath = app.isPackaged
+    ? path.join(process.resourcesPath, 'ml-service.exe')
+    : path.join(__dirname, '../../resources/ml-service.exe')
+
+  try {
+    mlService = spawn(mlServicePath, [], {
+      detached: false,
+      stdio: 'ignore'
+    })
+
+    mlService.on('error', (err) => {
+      console.error('ML Service failed to start:', err)
+    })
+
+    mlService.on('exit', (code) => {
+      console.log(`ML Service exited with code ${code}`)
+    })
+
+    console.log('✅ ML Service started on port 8000')
+  } catch (err) {
+    console.error('Could not start ML service:', err)
+  }
+}
+
+function stopMLService() {
+  if (mlService) {
+    mlService.kill()
+    mlService = null
+    console.log('ML Service stopped')
+  }
+}
+
+// ── Window ───────────────────────────────────────────────────────────────────
 
 function createWindow() {
   win = new BrowserWindow({
@@ -53,7 +94,6 @@ function startCollection() {
       const fast = await collectFastMetrics()
       void win?.webContents.send('metrics-update', {
         ...fast,
-        // slow fields will be sent on slow ticks — renderer keeps last value
       })
     } catch (err) {
       console.error('Fast tick error:', err)
@@ -61,21 +101,72 @@ function startCollection() {
   }, 1000)
 
   // Slow tier — every 10s (disk, temp, processes, battery)
-  setInterval(async () => {
-    try {         // updates the cache inside metrics.ts
-      const full = await collectSlowMetrics()    // fast + cached slow merged
+    setInterval(async () => {
+    try {
+      const full = await collectSlowMetrics()
       void win?.webContents.send('metrics-update', full)
 
       dbTickCount++
-      if (dbTickCount % 6 === 0) {         // save to DB every 60s (6 × 10s)
+      if (dbTickCount % 6 === 0) {
         await snapshotsDB.insert(JSON.parse(JSON.stringify(full)))
         console.log('💾 Saved to DB')
       }
+
+      // Send to ML model every 10s
+      try {
+        const response = await fetch('http://localhost:8000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cpu:       full.cpuLoad,
+            memory:    full.ramPercent,
+            disk:      full.diskUsedPercent,
+            processes: full.topProcesses.length
+          })
+        })
+
+        if (response.ok) {
+          const prediction = await response.json()
+          // Send prediction result to frontend
+          void win?.webContents.send('prediction-update', prediction)
+
+          // Save warning to DB if anomaly
+          if (prediction.prediction === 'Anomaly') {
+            await warningsDB.insert({
+              timestamp: Date.now(),
+              message:   prediction.reason,
+              level:     'warning'
+            })
+          }
+        }
+      } catch {
+        console.log('ML service not ready yet')
+      }
+
     } catch (err) {
       console.error('Slow tick error:', err)
     }
   }, 10000)
 }
+
+// ── ML Prediction IPC ────────────────────────────────────────────────────────
+
+ipcMain.handle('get-prediction', async (_event, metrics) => {
+  try {
+    const response = await fetch('http://localhost:8000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(metrics)
+    })
+
+    if (!response.ok) throw new Error('ML service error')
+    return await response.json()
+
+  } catch (err) {
+    console.error('Prediction error:', err)
+    return { prediction: 'Unknown', reason: 'ML service not available' }
+  }
+})
 
 // ── IPC Handlers ─────────────────────────────────────────────────────────────
 
@@ -91,14 +182,20 @@ ipcMain.handle('get-warnings', async () => {
 // ── App Lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  startMLService()    // ← start ML service first
   createWindow()
   startCollection()
 })
 
 app.on('window-all-closed', () => {
+  stopMLService()     // ← kill ML service when app closes
   if (process.platform !== 'darwin') app.quit()
 })
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+app.on('before-quit', () => {
+  stopMLService()     // ← also kill on quit
 })

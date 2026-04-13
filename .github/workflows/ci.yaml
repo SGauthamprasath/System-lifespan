@@ -7,26 +7,39 @@ on:
     branches: [develop, main]
 
 jobs:
-  build:
+  test-electron:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: System-monitor-application
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install dependencies
         run: npm install
-
       - name: Run lint
         run: npm run lint
-
       - name: Build app
         run: npm run build
+
+  test-fastapi:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fastapi
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Test FastAPI starts
+        run: |
+          uvicorn main_api:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -f http://localhost:8000/ || exit 1
